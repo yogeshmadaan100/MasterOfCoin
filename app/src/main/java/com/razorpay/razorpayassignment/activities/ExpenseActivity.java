@@ -1,4 +1,4 @@
-package com.razorpay.razorpayassignment;
+package com.razorpay.razorpayassignment.activities;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -9,13 +9,20 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.razorpay.razorpayassignment.R;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class ExpenseActivity extends AppCompatActivity {
+    @Bind(R.id.toolbar)
+    Toolbar toolbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_expense);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
