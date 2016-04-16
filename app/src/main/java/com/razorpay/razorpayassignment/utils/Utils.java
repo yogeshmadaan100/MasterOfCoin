@@ -15,6 +15,7 @@ import java.util.Date;
 public class Utils {
     private final static DateFormat isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private final static DateFormat standardDateFormat = new SimpleDateFormat("dd MMM yyyy hh:mm:ss a");
+    private final static DateFormat simpleDateFormat = new SimpleDateFormat("hh:mm:ss");
     public static boolean isConnectedToInternet(Context context) {
         if (context != null) {
             ConnectivityManager cm = (ConnectivityManager) context
@@ -38,5 +39,20 @@ public class Utils {
         } catch (ParseException e) {
             return date;
         }
+    }
+
+    public static Long convertDatetoTimestamp(String date)
+    {
+        try {
+            Date timeStamp = isoDateFormat.parse(date);
+            return  timeStamp.getTime();
+        } catch (ParseException e) {
+            return 0L;
+        }
+    }
+
+    public static String formatLastUpdatedTimestamp(Long timestamp)
+    {
+        return simpleDateFormat.format(new Date(timestamp));
     }
 }

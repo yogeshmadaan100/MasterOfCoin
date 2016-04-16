@@ -41,5 +41,12 @@ public class ExpenseActivityFragment extends Fragment {
         viewPager.setAdapter(expensePagerAdapter);
         tabLayout.setupWithViewPager(viewPager);
         viewPager.setOffscreenPageLimit(0);
+
     }
+    public void sort(String sortCriteria)
+    {
+        //TODO improve this interaction mechanism
+        ((ExpenseListFragment)expensePagerAdapter.getRegisteredFragment(viewPager.getCurrentItem())).sort(sortCriteria);
+    }
+
 }

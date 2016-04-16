@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -20,14 +21,19 @@ import android.view.ViewGroup;
 
 import com.razorpay.razorpayassignment.R;
 import com.razorpay.razorpayassignment.adapters.ExpenseListAdapter;
+import com.razorpay.razorpayassignment.interfaces.ToolbarInterface;
 import com.razorpay.razorpayassignment.models.Expense;
 import com.razorpay.razorpayassignment.models.ExpenseResponse;
 import com.razorpay.razorpayassignment.models.ExpenseType;
+import com.razorpay.razorpayassignment.models.SortType;
 import com.razorpay.razorpayassignment.services.ExpenseService;
 import com.razorpay.razorpayassignment.utils.RxUtils;
+import com.razorpay.razorpayassignment.utils.SharedPrefUtils;
 import com.razorpay.razorpayassignment.utils.Utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -56,16 +62,18 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
 
     private static final String ARG_EXPENSE_TYPE = "expenseType";
     private static final String TAG = ExpenseListFragment.class.getCanonicalName();
-    public static final ExpenseType DEFAULT_EXPENSE_TYPE = ExpenseType.ALL;
+    private static final ExpenseType DEFAULT_EXPENSE_TYPE = ExpenseType.ALL;
     private ExpenseType expenseType = DEFAULT_EXPENSE_TYPE;
+    private SortType SORT_TYPE = SortType.NONE;
+    private static final String KEY_SORT_TYPE ="sortType";
 
     private List<Expense> expenses;
     private ExpenseListAdapter expenseListAdapter;
     private CompositeSubscription _subscriptions = new CompositeSubscription();
-    private ExpenseResponse expenseResponse;
     private ViewGroup rootView;
     public Subscription getExpenseSubscrption, putExpenseSubscription;
-
+    private ToolbarInterface toolbarInterface = null;
+    private SharedPrefUtils sharedPrefUtils;
     public ExpenseListFragment() {
         // Required empty public constructor
     }
@@ -112,6 +120,7 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
         recyclerView.setAdapter(expenseListAdapter);
         refreshContent();
         networkStateReceiver = new NetworkStateReceiver();
+        sharedPrefUtils = new SharedPrefUtils(getActivity());
     }
 
     @Override
@@ -119,7 +128,7 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
         super.onResume();
         _subscriptions = RxUtils.getNewCompositeSubIfUnsubscribed(_subscriptions);
         getActivity().registerReceiver(networkStateReceiver, filter);
-
+        refreshContent();
     }
 
     @Override
@@ -128,6 +137,17 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
         RxUtils.unsubscribeIfNotNull(_subscriptions);
         getExpenseSubscrption = null;
         getActivity().unregisterReceiver(networkStateReceiver);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        try{
+            toolbarInterface = (ToolbarInterface)context;
+        }catch(ClassCastException e)
+        {
+
+        }
     }
 
     public void startRefreshing() {
@@ -187,15 +207,17 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
 
     public void refreshData(ExpenseResponse expenseResponse) {
         if (expenseResponse != null && expenseResponse.getExpenses().size() > 0) {
-
-            this.expenseResponse = expenseResponse;
+            sharedPrefUtils.setLastTimestamp(System.currentTimeMillis());
+            sharedPrefUtils.setServerStatus("ONLINE");
+            updateToolbarSubtitle();
             expenses.clear();
             if (expenseType != ExpenseType.ALL) {
                 ExpenseResponse.sortExpensesByCategory(expenseResponse.getExpenses(), expenseType);
                 expenses.addAll(expenseResponse.getExpenses());
             } else
                 expenses.addAll(expenseResponse.getExpenses());
-            expenseListAdapter.notifyDataSetChanged();
+
+            sort(SORT_TYPE.toString());
             stopRefreshing();
 
 
@@ -216,8 +238,8 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     public void registerGetExpenseSubscription() {
         getExpenseSubscrption = new ExpenseService(getActivity()).getExpenseApi().getExpenses(getResources().getString(R.string.string_blob_id))
                 .subscribeOn(Schedulers.io())
-                .retryWhen(new RetryWithDelay(1, 5000))
-                .repeatWhen(new RepeatWithDelay(2000))
+                .retryWhen(new RetryWithDelay(5, 20000))
+                .repeatWhen(new RepeatWithDelay(20000))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<ExpenseResponse>() {
                     @Override
@@ -227,7 +249,12 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
                     @Override
                     public void onError(Throwable e) {
                         if (!Utils.isConnectedToInternet(getActivity()))
+                        {
                             showSnackbar(getResources().getString(R.string.text_no_internet));
+                            sharedPrefUtils.setServerStatus("OFFLINE");
+                            updateToolbarSubtitle();
+
+                        }
                         else
                             showSnackbar(getResources().getString(R.string.text_default_error));
                     }
@@ -274,7 +301,11 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
                                 @Override
                                 public void onError(Throwable e) {
                                     if (!Utils.isConnectedToInternet(getActivity()))
+                                    {
                                         showSnackbar(getResources().getString(R.string.text_no_internet));
+                                        sharedPrefUtils.setServerStatus("OFFLINE");
+                                        updateToolbarSubtitle();
+                                    }
                                     else
                                         showSnackbar(getResources().getString(R.string.text_default_error));
                                 }
@@ -289,9 +320,22 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     }
 
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        //Don't Do anything here as we always want updated data
+        outState.putSerializable(KEY_SORT_TYPE,SORT_TYPE);
+    }
 
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        Log.e("View state","restored");
+        if(savedInstanceState!=null && savedInstanceState.getSerializable(KEY_SORT_TYPE)!=null)
+            SORT_TYPE = (SortType) savedInstanceState.getSerializable(KEY_SORT_TYPE);
+    }
 
-//public static class RetryWithDelay
+    //public static class RetryWithDelay
  public class RetryWithDelay implements Func1<Observable<? extends Throwable>, Observable<?>> {
 
     private final int _maxRetries;
@@ -388,6 +432,49 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
                     // no Internet connection, send network state changed
                 }
             }
+        }
+    }
+    public void updateToolbarSubtitle()
+    {
+        if(toolbarInterface!=null)
+        {
+            toolbarInterface.setToolbarSubTitle("LastUpdated : "+Utils.formatLastUpdatedTimestamp(sharedPrefUtils.getLastTimestamp()) + "("+sharedPrefUtils.getServerStatus()+")");
+        }
+    }
+    public void sort(String sortCriteria)
+    {
+        Log.e("sorting with",""+sortCriteria);
+        if(sortCriteria.equalsIgnoreCase(SORT_TYPE.TIME.toString()))
+            Collections.sort(expenses,new TimeComparator());
+        else if(sortCriteria.equalsIgnoreCase(SORT_TYPE.CATEGORY.toString()))
+            Collections.sort(expenses,new CategoryComparator());
+        else if(sortCriteria.equalsIgnoreCase(SORT_TYPE.CATEGORY.toString()))
+            Collections.sort(expenses,new StateComparator());
+        expenseListAdapter.notifyDataSetChanged();
+    }
+
+    public class TimeComparator implements Comparator<Expense>
+    {
+
+        @Override
+        public int compare(Expense lhs, Expense rhs) {
+            return Utils.convertDatetoTimestamp(lhs.getTime()).compareTo(Utils.convertDatetoTimestamp(rhs.getTime()));
+        }
+
+    }
+    public class StateComparator implements Comparator<Expense>
+    {
+        @Override
+        public int compare(Expense lhs, Expense rhs) {
+            return lhs.getState().compareTo(rhs.getState());
+        }
+    }
+
+    public class CategoryComparator implements Comparator<Expense>
+    {
+        @Override
+        public int compare(Expense lhs, Expense rhs) {
+            return lhs.getCategory().compareTo(rhs.getCategory());
         }
     }
 }

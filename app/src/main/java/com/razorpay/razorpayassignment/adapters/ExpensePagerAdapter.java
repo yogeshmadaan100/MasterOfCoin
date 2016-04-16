@@ -3,6 +3,8 @@ package com.razorpay.razorpayassignment.adapters;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.util.SparseArray;
+import android.view.ViewGroup;
 
 import com.razorpay.razorpayassignment.fragments.ExpenseListFragment;
 import com.razorpay.razorpayassignment.models.ExpenseType;
@@ -12,6 +14,7 @@ import com.razorpay.razorpayassignment.models.ExpenseType;
  */
 public class ExpensePagerAdapter extends FragmentStatePagerAdapter {
     String[] titles = {ExpenseType.ALL.toString(), ExpenseType.TAXI.toString(), ExpenseType.RECHARGE.toString()};
+    SparseArray<Fragment> registeredFragments = new SparseArray<Fragment>();
 
     public ExpensePagerAdapter(FragmentManager fragmentManager)
     {
@@ -41,5 +44,22 @@ public class ExpensePagerAdapter extends FragmentStatePagerAdapter {
     @Override
     public CharSequence getPageTitle(int position) {
         return titles[position];
+    }
+
+    @Override
+    public Object instantiateItem(ViewGroup container, int position) {
+        Fragment fragment = (Fragment) super.instantiateItem(container, position);
+        registeredFragments.put(position, fragment);
+        return fragment;
+    }
+
+    @Override
+    public void destroyItem(ViewGroup container, int position, Object object) {
+        registeredFragments.remove(position);
+        super.destroyItem(container, position, object);
+    }
+
+    public Fragment getRegisteredFragment(int position) {
+        return registeredFragments.get(position);
     }
 }
