@@ -4,4 +4,14 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="text_retry">Retry</string>
+    <string name="text_no_internet">It seems that your internet is not working.</string>
+    <string name="text_default_error">Some error occurred. Please try again!</string>
+
+    <string name="text_expense_id">Expense ID : </string>
+    <string name="text_rupee">\u20B9</string>
+    <string name="change_to_verified">Change to Verified</string>
+    <string name="change_to_unverified">Change to Unverified</string>
+    <string name="change_to_fraudulent">Change to Fraudulent</string>
 </resources>

@@ -3,4 +3,22 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
+
+    <!-- Margins -->
+    <dimen name="margins5">5dp</dimen>
+    <dimen name="margins10">10dp</dimen>
+    <dimen name="margins20">20dp</dimen>
+    <dimen name="margins30">30dp</dimen>
+    <dimen name="margins40">40dp</dimen>
+
+    <!-- Text Sizes -->
+    <dimen name="text12">12sp</dimen>
+    <dimen name="text14">14sp</dimen>
+    <dimen name="text16">16sp</dimen>
+    <dimen name="text18">18sp</dimen>
+    <dimen name="text20">20sp</dimen>
+
+    <!-- Expense List Item -->
+    <dimen name="width_side_bar">5dp</dimen>
+    <dimen name="list_min_height">100dp</dimen>
 </resources>

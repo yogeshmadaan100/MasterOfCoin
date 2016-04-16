@@ -1,0 +1,63 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/list_min_height"
+    android:layout_marginLeft="@dimen/margins10"
+    android:layout_marginRight="@dimen/margins10"
+    android:layout_marginTop="@dimen/margins5"
+    android:layout_marginBottom="@dimen/margins5"
+    android:background="@android:color/white">
+
+
+    <TextView
+        android:layout_marginTop="@dimen/margins10"
+        android:id="@+id/expenseID"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/margins5"
+        android:textColor="@android:color/black"
+        android:textSize="@dimen/text16" />
+    <TextView
+        android:id="@+id/expenseTimestamp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/margins5"
+        android:layout_below="@id/expenseID"
+        android:textSize="@dimen/text12" />
+    <TextView
+        android:layout_marginBottom="@dimen/margins10"
+        android:layout_marginLeft="@dimen/margins5"
+        android:id="@+id/expenseDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/expenseTimestamp"
+        android:textColor="@android:color/black"
+        android:textSize="@dimen/text14" />
+    <TextView
+        android:id="@+id/expenseState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="@dimen/margins10"
+        android:layout_below="@id/expenseDescription"
+        android:textSize="@dimen/text12"
+        android:layout_alignParentRight="trueg"/>
+
+    <ImageView
+        android:id="@+id/actionMore"
+        android:layout_margin="@dimen/margins10"
+        android:layout_width="@dimen/margins20"
+        android:layout_height="@dimen/margins20"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:src="@android:drawable/ic_menu_set_as"/>
+    <TextView
+        android:id="@+id/expenseAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@id/actionMore"
+        android:textSize="@dimen/text18"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="@dimen/margins10"/>
+
+</RelativeLayout> 

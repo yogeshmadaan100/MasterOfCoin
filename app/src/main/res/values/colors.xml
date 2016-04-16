@@ -3,4 +3,8 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+
+    <color name="color_recharge">#80FF4081</color>
+    <color name="color_taxi">#80FFC107</color>
+    <color name="color_grey">#F3F3F3F3</color>
 </resources>

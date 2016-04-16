@@ -40,5 +40,6 @@ public class ExpenseActivityFragment extends Fragment {
         expensePagerAdapter = new ExpensePagerAdapter(getActivity().getSupportFragmentManager());
         viewPager.setAdapter(expensePagerAdapter);
         tabLayout.setupWithViewPager(viewPager);
+        viewPager.setOffscreenPageLimit(0);
     }
 }
