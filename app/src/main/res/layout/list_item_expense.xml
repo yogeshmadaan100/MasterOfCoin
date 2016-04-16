@@ -40,7 +40,7 @@
         android:layout_marginRight="@dimen/margins10"
         android:layout_below="@id/expenseDescription"
         android:textSize="@dimen/text12"
-        android:layout_alignParentRight="trueg"/>
+        android:layout_alignParentRight="true"/>
 
     <ImageView
         android:id="@+id/actionMore"

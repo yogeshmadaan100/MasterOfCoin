@@ -1,12 +1,19 @@
 package com.razorpay.razorpayassignment.fragments;
 
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,11 +29,15 @@ import com.razorpay.razorpayassignment.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.Observer;
+import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
@@ -37,6 +48,11 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     SwipeRefreshLayout swipeRefreshLayout;
     @Bind(R.id.recycler_view)
     RecyclerView recyclerView;
+    static final String ACTION = "android.net.conn.CONNECTIVITY_CHANGE";
+
+
+    IntentFilter filter = new IntentFilter(ACTION);
+    NetworkStateReceiver networkStateReceiver;
 
     private static final String ARG_EXPENSE_TYPE = "expenseType";
     private static final String TAG = ExpenseListFragment.class.getCanonicalName();
@@ -48,6 +64,7 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     private CompositeSubscription _subscriptions = new CompositeSubscription();
     private ExpenseResponse expenseResponse;
     private ViewGroup rootView;
+    public Subscription getExpenseSubscrption, putExpenseSubscription;
 
     public ExpenseListFragment() {
         // Required empty public constructor
@@ -75,13 +92,12 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         rootView = (ViewGroup) inflater.inflate(R.layout.fragment_expense_list, container, false);
-        ButterKnife.bind(this,rootView);
+        ButterKnife.bind(this, rootView);
         initViews();
         return rootView;
     }
 
-    public void initViews()
-    {
+    public void initViews() {
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -91,15 +107,18 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
         swipeRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
         recyclerView.setHasFixedSize(true);
         expenses = new ArrayList<>();
-        expenseListAdapter = new ExpenseListAdapter(getActivity(),expenses,this);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity(),LinearLayoutManager.VERTICAL,false));
+        expenseListAdapter = new ExpenseListAdapter(getActivity(), expenses, this);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(expenseListAdapter);
         refreshContent();
+        networkStateReceiver = new NetworkStateReceiver();
     }
+
     @Override
     public void onResume() {
         super.onResume();
         _subscriptions = RxUtils.getNewCompositeSubIfUnsubscribed(_subscriptions);
+        getActivity().registerReceiver(networkStateReceiver, filter);
 
     }
 
@@ -107,7 +126,10 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     public void onPause() {
         super.onPause();
         RxUtils.unsubscribeIfNotNull(_subscriptions);
+        getExpenseSubscrption = null;
+        getActivity().unregisterReceiver(networkStateReceiver);
     }
+
     public void startRefreshing() {
         swipeRefreshLayout.setRefreshing(true);
     }
@@ -118,42 +140,60 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
 
     public void refreshContent() {
         startRefreshing();
-        _subscriptions.add(//
-                new ExpenseService(getActivity()).getExpenseApi().getExpenses(getResources().getString(R.string.string_blob_id))
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Observer<ExpenseResponse>() {
-                            @Override
-                            public void onCompleted() {
-                            }
 
-                            @Override
-                            public void onError(Throwable e) {
-                                if(!Utils.isConnectedToInternet(getActivity()))
-                                    showSnackbar(getResources().getString(R.string.text_no_internet));
-                                else
-                                    showSnackbar(getResources().getString(R.string.text_default_error));
-                            }
-
-                            @Override
-                            public void onNext(ExpenseResponse expenseResponse) {
-                                refreshData(expenseResponse);
-                            }
-                        }));
+        if(getExpenseSubscrption==null) {
+            registerGetExpenseSubscription();
+            addSubscription(getExpenseSubscrption);
+        }
     }
+    //
+//                Observable.timer(0, 2000, TimeUnit.MILLISECONDS)
+//                        .flatMap(new Func1<Long, Observable<ExpenseResponse>>(){
+//
+//                            @Override
+//                            public Observable<ExpenseResponse> call(Long tick) {
+//                                return new ExpenseService(getActivity()).getExpenseApi().getExpenses(getResources().getString(R.string.string_blob_id))
+////                                        .onErrorResumeNext(new Func1<Throwable, Observable<ExpenseResponse>>(){
+////                                            @Override
+////                                            public Observable<ExpenseResponse> call(Throwable throwable) {
+////                                                return Observable.empty();
+////                                            }
+////                                        })
+// ;
+//                            }
+//                        })
+//                        .subscribeOn(Schedulers.io())
+//                        .retryWhen(new RetryWithDelay(5,5000))
+//                        .observeOn(AndroidSchedulers.mainThread())
+//                        .subscribe(new Observer<ExpenseResponse>() {
+//                            @Override
+//                            public void onCompleted() {
+//                            }
+//
+//                            @Override
+//                            public void onError(Throwable e) {
+//                                if(!Utils.isConnectedToInternet(getActivity()))
+//                                    showSnackbar(getResources().getString(R.string.text_no_internet));
+//                                else
+//                                    showSnackbar(getResources().getString(R.string.text_default_error));
+//                            }
+//
+//                            @Override
+//                            public void onNext(ExpenseResponse expenseResponse) {
+//                                refreshData(expenseResponse);
+//                            }
+//                        }));
 
-    public void refreshData(ExpenseResponse expenseResponse)
-    {
+
+    public void refreshData(ExpenseResponse expenseResponse) {
         if (expenseResponse != null && expenseResponse.getExpenses().size() > 0) {
 
-                this.expenseResponse = expenseResponse;
-                expenses.clear();
-            if(expenseType != ExpenseType.ALL)
-            {
-                ExpenseResponse.sortExpensesByCategory(expenseResponse.getExpenses(),expenseType);
+            this.expenseResponse = expenseResponse;
+            expenses.clear();
+            if (expenseType != ExpenseType.ALL) {
+                ExpenseResponse.sortExpensesByCategory(expenseResponse.getExpenses(), expenseType);
                 expenses.addAll(expenseResponse.getExpenses());
-            }
-            else
+            } else
                 expenses.addAll(expenseResponse.getExpenses());
             expenseListAdapter.notifyDataSetChanged();
             stopRefreshing();
@@ -161,10 +201,10 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
 
         }
     }
-    public void showSnackbar(String text)
-    {
+
+    public void showSnackbar(String text) {
         stopRefreshing();
-        Snackbar.make(rootView,text, Snackbar.LENGTH_LONG)
+        Snackbar.make(rootView, text, Snackbar.LENGTH_LONG)
                 .setAction(getResources().getString(R.string.text_retry), new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -173,32 +213,182 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
                 }).show();
     }
 
+    public void registerGetExpenseSubscription() {
+        getExpenseSubscrption = new ExpenseService(getActivity()).getExpenseApi().getExpenses(getResources().getString(R.string.string_blob_id))
+                .subscribeOn(Schedulers.io())
+                .retryWhen(new RetryWithDelay(1, 5000))
+                .repeatWhen(new RepeatWithDelay(2000))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<ExpenseResponse>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        if (!Utils.isConnectedToInternet(getActivity()))
+                            showSnackbar(getResources().getString(R.string.text_no_internet));
+                        else
+                            showSnackbar(getResources().getString(R.string.text_default_error));
+                    }
+
+                    @Override
+                    public void onNext(ExpenseResponse expenseResponse) {
+                        refreshData(expenseResponse);
+                    }
+                });
+    }
+
+    public void addSubscription(Subscription subscription)
+    {
+        Log.e("subscription","Added");
+        _subscriptions.add(subscription);
+    }
+
+    public void removeSubscription(Subscription subscription)
+    {
+        try{
+            _subscriptions.remove(subscription);
+        }catch (Exception e)
+        {
+            Log.d("Subscription","Remove Failed");
+        }
+    }
     @Override
     public void onExpenseUpdate(List<Expense> expenses) {
-        ExpenseResponse expenseResponse = new ExpenseResponse();
-        expenseResponse.setExpenses(expenses);
-        _subscriptions.add(//
-                new ExpenseService(getActivity()).getExpenseApi().updateExpenses(getResources().getString(R.string.string_blob_id),expenseResponse)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Observer<ExpenseResponse>() {
-                            @Override
-                            public void onCompleted() {
-                            }
+        startRefreshing();
+        if (!Utils.isConnectedToInternet(getActivity())) { // To save calls when internet not working
+            showSnackbar(getResources().getString(R.string.text_no_internet));
+        } else {
+            ExpenseResponse expenseResponse = new ExpenseResponse();
+            expenseResponse.setExpenses(expenses);
+            _subscriptions.add(//
+                    new ExpenseService(getActivity()).getExpenseApi().updateExpenses(getResources().getString(R.string.string_blob_id), expenseResponse)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(new Observer<ExpenseResponse>() {
+                                @Override
+                                public void onCompleted() {
+                                }
 
-                            @Override
-                            public void onError(Throwable e) {
-                                if(!Utils.isConnectedToInternet(getActivity()))
-                                    showSnackbar(getResources().getString(R.string.text_no_internet));
-                                else
-                                    showSnackbar(getResources().getString(R.string.text_default_error));
-                            }
+                                @Override
+                                public void onError(Throwable e) {
+                                    if (!Utils.isConnectedToInternet(getActivity()))
+                                        showSnackbar(getResources().getString(R.string.text_no_internet));
+                                    else
+                                        showSnackbar(getResources().getString(R.string.text_default_error));
+                                }
 
-                            @Override
-                            public void onNext(ExpenseResponse expenseResponse) {
-                                refreshData(expenseResponse);
-                                //TODO improve update performance by updating specific element of recycler view
-                            }
-                        }));
+                                @Override
+                                public void onNext(ExpenseResponse expenseResponse) {
+                                    refreshData(expenseResponse);
+                                    //TODO improve update performance by updating specific element of recycler view
+                                }
+                            }));
+        }
+    }
+
+
+
+
+//public static class RetryWithDelay
+ public class RetryWithDelay implements Func1<Observable<? extends Throwable>, Observable<?>> {
+
+    private final int _maxRetries;
+    private final int _retryDelayMillis;
+    private int _retryCount;
+
+    public RetryWithDelay(final int maxRetries, final int retryDelayMillis) {
+        _maxRetries = maxRetries;
+        _retryDelayMillis = retryDelayMillis;
+        _retryCount = 0;
+    }
+
+    // this is a notificationhandler, all that is cared about here
+    // is the emission "type" not emission "content"
+    // only onNext triggers a re-subscription (onError + onComplete kills it)
+
+    @Override
+    public Observable<?> call(Observable<? extends Throwable> inputObservable) {
+
+        // it is critical to use inputObservable in the chain for the result
+        // ignoring it and doing your own thing will break the sequence
+
+        return inputObservable.flatMap(new Func1<Throwable, Observable<?>>() {
+            @Override
+            public Observable<?> call(Throwable throwable) {
+                if (++_retryCount < _maxRetries) {
+
+                    // When this Observable calls onNext, the original
+                    // Observable will be retried (i.e. re-subscribed)
+
+                    Log.d("Retrying in %d ms", "" + _retryCount * _retryDelayMillis);
+
+                    return Observable.timer(_retryCount * _retryDelayMillis,
+                            TimeUnit.MILLISECONDS);
+                }
+
+                Log.d("Retry", "Argh! i give up");
+
+                // Max retries hit. Pass an error so the chain is forcibly completed
+                // only onNext triggers a re-subscription (onError + onComplete kills it)
+                removeSubscription(getExpenseSubscrption);
+                getExpenseSubscrption = null;
+                return Observable.error(throwable);
+            }
+        });
+    }
+    }
+
+//public static class RepeatWithDelay
+    public class RepeatWithDelay implements Func1<Observable<? extends Void>, Observable<?>> {
+
+    private final int _repeatDelayMillis;
+
+    public RepeatWithDelay(final int repeatDelayMillis) {
+        _repeatDelayMillis = repeatDelayMillis;
+    }
+
+    // this is a notificationhandler, all that is cared about here
+    // is the emission "type" not emission "content"
+    // only onNext triggers a re-subscription (onError + onComplete kills it)
+
+
+    @Override
+    public Observable<?> call(Observable<? extends Void> observable) {
+        return observable.flatMap(new Func1<Void, Observable<?>>() {
+            @Override
+            public Observable<?> call(Void aVoid) {
+                return Observable.timer(_repeatDelayMillis,
+                        TimeUnit.MILLISECONDS);
+            }
+
+        });
+    }
+    }
+
+
+    public class NetworkStateReceiver extends BroadcastReceiver {
+        // post event if there is no Internet connection
+        public void onReceive(Context context, Intent intent) {
+            //super.onReceive(context, intent);
+            if (intent.getExtras() != null) {
+                NetworkInfo ni = (NetworkInfo) intent.getExtras().get(ConnectivityManager.EXTRA_NETWORK_INFO);
+                if (ni != null && ni.getState() == NetworkInfo.State.CONNECTED) {
+
+                    // there is Internet connection
+                    if (getExpenseSubscrption == null)
+                    {
+                        registerGetExpenseSubscription();
+                        addSubscription(getExpenseSubscrption);
+                    }
+
+                }
+                if (intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, Boolean.FALSE)) {
+                    // no Internet connection, send network state changed
+                }
+            }
+        }
     }
 }
+
