@@ -20,7 +20,7 @@ import retrofit2.RxJavaCallAdapterFactory;
  * Created by yogeshmadaan on 16/04/16.
  */
 public class ServiceGenerator {
-    static String BASE_URL= "https://jsonblob.com/";
+    public static String BASE_URL= "https://jsonblob.com/";
 
     // No need to instantiate this class.
     private ServiceGenerator() {

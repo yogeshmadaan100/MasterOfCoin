@@ -7,7 +7,10 @@ import android.net.NetworkInfo;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Created by yogeshmadaan on 16/04/16.
@@ -45,7 +48,9 @@ public class Utils {
     {
         try {
             Date timeStamp = isoDateFormat.parse(date);
-            return  timeStamp.getTime();
+            Calendar calendar = Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault());
+            calendar.setTime(timeStamp);
+            return  calendar.getTime().getTime();
         } catch (ParseException e) {
             return 0L;
         }
@@ -53,6 +58,13 @@ public class Utils {
 
     public static String formatLastUpdatedTimestamp(Long timestamp)
     {
-        return simpleDateFormat.format(new Date(timestamp));
+        String formattedDate = null;
+        try{
+            formattedDate = simpleDateFormat.format(new Date(timestamp));
+        }catch (Exception e)
+        {
+
+        }
+        return formattedDate ;
     }
 }

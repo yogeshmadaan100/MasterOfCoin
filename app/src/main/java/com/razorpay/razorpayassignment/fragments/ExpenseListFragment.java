@@ -218,6 +218,7 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
                 expenses.addAll(expenseResponse.getExpenses());
 
             sort(SORT_TYPE.toString());
+            expenseListAdapter.notifyDataSetChanged();
             stopRefreshing();
 
 
@@ -443,14 +444,12 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     }
     public void sort(String sortCriteria)
     {
-        Log.e("sorting with",""+sortCriteria);
         if(sortCriteria.equalsIgnoreCase(SORT_TYPE.TIME.toString()))
             Collections.sort(expenses,new TimeComparator());
         else if(sortCriteria.equalsIgnoreCase(SORT_TYPE.CATEGORY.toString()))
             Collections.sort(expenses,new CategoryComparator());
         else if(sortCriteria.equalsIgnoreCase(SORT_TYPE.CATEGORY.toString()))
             Collections.sort(expenses,new StateComparator());
-        expenseListAdapter.notifyDataSetChanged();
     }
 
     public class TimeComparator implements Comparator<Expense>
@@ -476,6 +475,15 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
         public int compare(Expense lhs, Expense rhs) {
             return lhs.getCategory().compareTo(rhs.getCategory());
         }
+    }
+
+
+    public List<Expense> getExpenses() {
+        return expenses;
+    }
+
+    public void setExpenses(List<Expense> expenses) {
+        this.expenses = expenses;
     }
 }
 
