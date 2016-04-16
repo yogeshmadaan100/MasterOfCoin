@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.razorpay.razorpayassignment.R;
 import com.razorpay.razorpayassignment.adapters.ExpenseListAdapter;
@@ -54,6 +55,8 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     SwipeRefreshLayout swipeRefreshLayout;
     @Bind(R.id.recycler_view)
     RecyclerView recyclerView;
+    @Bind(R.id.txt_no_expense)
+    TextView txtNoExpense;
     static final String ACTION = "android.net.conn.CONNECTIVITY_CHANGE";
 
 
@@ -209,6 +212,7 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
 
     public void refreshData(ExpenseResponse expenseResponse) {
         if (expenseResponse != null && expenseResponse.getExpenses().size() > 0) {
+            txtNoExpense.setVisibility(View.GONE);
             sharedPrefUtils.setLastTimestamp(System.currentTimeMillis());
             sharedPrefUtils.setServerStatus("ONLINE");
             updateToolbarSubtitle();
@@ -222,6 +226,11 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
             expenseListAdapter.notifyDataSetChanged();
             stopRefreshing();
 
+
+        }
+        else if(expenseResponse!=null)
+        {
+            txtNoExpense.setVisibility(View.VISIBLE);
 
         }
     }
