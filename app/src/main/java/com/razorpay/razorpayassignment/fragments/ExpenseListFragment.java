@@ -64,7 +64,7 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     private static final String TAG = ExpenseListFragment.class.getCanonicalName();
     private static final ExpenseType DEFAULT_EXPENSE_TYPE = ExpenseType.ALL;
     private ExpenseType expenseType = DEFAULT_EXPENSE_TYPE;
-    private SortType SORT_TYPE = SortType.NONE;
+    private SortType SORT_TYPE = null;
     private static final String KEY_SORT_TYPE ="sortType";
 
     private List<Expense> expenses;
@@ -121,6 +121,8 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
         refreshContent();
         networkStateReceiver = new NetworkStateReceiver();
         sharedPrefUtils = new SharedPrefUtils(getActivity());
+        SORT_TYPE = SortType.NONE;
+        Log.e("setting sort","none");
     }
 
     @Override
@@ -216,7 +218,6 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
                 expenses.addAll(expenseResponse.getExpenses());
             } else
                 expenses.addAll(expenseResponse.getExpenses());
-
             sort(SORT_TYPE.toString());
             expenseListAdapter.notifyDataSetChanged();
             stopRefreshing();
@@ -445,11 +446,20 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     public void sort(String sortCriteria)
     {
         if(sortCriteria.equalsIgnoreCase(SORT_TYPE.TIME.toString()))
+        {
             Collections.sort(expenses,new TimeComparator());
+            SORT_TYPE = SortType.TIME;
+        }
         else if(sortCriteria.equalsIgnoreCase(SORT_TYPE.CATEGORY.toString()))
+        {
             Collections.sort(expenses,new CategoryComparator());
+            SORT_TYPE = SortType.CATEGORY;
+        }
         else if(sortCriteria.equalsIgnoreCase(SORT_TYPE.CATEGORY.toString()))
+        {
             Collections.sort(expenses,new StateComparator());
+            SORT_TYPE = SortType.STATE;
+        }
     }
 
     public class TimeComparator implements Comparator<Expense>
