@@ -55,6 +55,7 @@ public class ExpenseActivity extends AppCompatActivity implements ToolbarInterfa
 
     @Override
     public void setToolbarSubTitle(String toolbarSubTitle) {
-        getSupportActionBar().setSubtitle(toolbarSubTitle);
+        if(getSupportActionBar()!=null)
+            getSupportActionBar().setSubtitle(toolbarSubTitle);
     }
 }
