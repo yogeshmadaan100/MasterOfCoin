@@ -548,5 +548,13 @@ public class ExpenseListFragment extends Fragment implements ExpenseListAdapter.
     public void setExpenses(List<Expense> expenses) {
         this.expenses = expenses;
     }
+
+    public ExpenseListAdapter getExpenseListAdapter() {
+        return expenseListAdapter;
+    }
+
+    public void setExpenseListAdapter(ExpenseListAdapter expenseListAdapter) {
+        this.expenseListAdapter = expenseListAdapter;
+    }
 }
 

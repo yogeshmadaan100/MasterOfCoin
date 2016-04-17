@@ -3,6 +3,8 @@ Master Of Coin
 
 This repository is basically an assignment in which I have to create an Android application that has following features.
 
+Required Features
+--------------
 - Should use the jsonblob api described [here](https://jsonblob.com/api) and [data](http://jsonblob.com/570de811e4b01190df5dafec)
 - A view where user can see all the transactions
 - By default each expense is unverifed. User should be able to put each transaction in three possible states:
@@ -13,6 +15,16 @@ This repository is basically an assignment in which I have to create an Android 
 - The view should be auto-updating. If the json data at the source changes, so should the view, without any user interaction
 - Do not use any local database on android side
 - There are just two categories of data: recharge and taxi. Bonus if you can use this information to make a better UI
+
+Additional Requirements
+--------------
+- Internet connectivity broadcast receiver to handle API calls
+- Retry with exponential backoff
+- Retry with delays
+- Filter with respect to time , category and state
+- Last updated data time
+- Server status
+- Unit tests
 
 Pre-requisites
 --------------
